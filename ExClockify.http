@@ -1,4 +1,4 @@
-@ExClockify_HostAddress = http://localhost:5156
+@ExClockify_HostAddress = https://localhost:5156
 
 GET {{ExClockify_HostAddress}}/weatherforecast/
 Accept: application/json

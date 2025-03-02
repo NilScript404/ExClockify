@@ -3,6 +3,11 @@ using ExClockify.Models;
 using ExClockify.Dtos;
 using ExClockify.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ExClockify.Controller
 {
@@ -13,15 +18,18 @@ namespace ExClockify.Controller
     {
         private readonly ExClockifyContext _repository;
         private readonly DtoService _dtoService;
+        private readonly IConfiguration _config;
         
-        public TrackController(ExClockifyContext repository, DtoService dtoservice)
+        public TrackController(ExClockifyContext repository, DtoService dtoservice , IConfiguration config)
         {
             _repository = repository;
             _dtoService = dtoservice;
+            _config = config;
         }
         
         // returning all tracks, based on deviceId
         [HttpGet("GetTracks")]
+        [Authorize]
         public async Task<ActionResult> GetTracksByDeviceId(string deviceId)
         {
             var user = await _repository.Users
@@ -79,7 +87,7 @@ namespace ExClockify.Controller
         // only updates if the id is found and wont add a new track
         // if the id was not found
         [HttpPut("UpdateTrack{id}")]
-        public async Task<ActionResult> UpdateTrack(TrackDto t, int id )
+        public async Task<ActionResult> UpdateTrack(TrackDto t, Guid id )
         {
             var track = await _repository.Tracks.FindAsync(id);
             if (track == null)
@@ -95,7 +103,7 @@ namespace ExClockify.Controller
             return Ok(_dtoService.MapTrackDtoToTrackDtoWithId(t , id));
         }
         
-        // Todo - login 
+        // Todo - sign up 
         [HttpPost("AddUser")]
         public async Task<ActionResult> CreateNewUserByDeviceId(string deviceId)
         {
@@ -107,5 +115,53 @@ namespace ExClockify.Controller
             
             return Ok();
         }
+    
+        [HttpPost("JwtLogin")]
+        public async Task<ActionResult> JwtLogin(string deviceId)
+        {
+            
+            var user = await _repository.Users.FindAsync(deviceId);
+            if (user == null)
+            {
+                return BadRequest("user was not found");
+            }
+            
+            string jwtToken = GenerateJWT(deviceId);
+            // add the token to the response header
+            Response.Headers.Add("Authorization", "Bearer " + jwtToken);
+            
+            // return the Jwt after login
+            return Ok("Login Done ----  " + jwtToken);
+        }
+        
+        private string GenerateJWT(string deviceId)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"]!));
+            // creating the signature part
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+        
+            // creating the payload part
+            var userClaims = new[]
+            {
+                // seems enough for now
+                new Claim(ClaimTypes.NameIdentifier, deviceId),
+                // new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                // new Claim(ClaimTypes.Name, user.Name!),
+                // new Claim(ClaimTypes.Email, user.Email!),
+                // new Claim(ClaimTypes.UserData, user.UserName!),
+            };
+            
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: userClaims,
+                // 1 day expiration for now
+                expires: DateTime.Now.AddDays(1),
+                signingCredentials: credentials
+            );
+            
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+    
     }
 }

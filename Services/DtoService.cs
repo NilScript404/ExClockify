@@ -18,7 +18,7 @@ namespace ExClockify.Services
             };
         }
         
-        public TrackDtoWithId MapTrackDtoToTrackDtoWithId(TrackDto t, int id)    
+        public TrackDtoWithId MapTrackDtoToTrackDtoWithId(TrackDto t, Guid id)    
         {
             return new TrackDtoWithId {
                 startTime = t.startTime,
@@ -27,7 +27,7 @@ namespace ExClockify.Services
                 description = t.description,
                 UserDeviceId = t.UserDeviceId,
                 name = t.name,
-                Id = id 
+                Id = id
             };
         }
         
