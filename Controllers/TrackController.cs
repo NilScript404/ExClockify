@@ -50,6 +50,7 @@ namespace ExClockify.Controller
         }
         
         [HttpPost("AddTrack")]
+        [Authorize]
         public async Task<ActionResult> CreateNewTrackByDeviceId(TrackDto track)
         {
             // dont need this check after adding jwt => [Authorize] (probably)
@@ -69,6 +70,7 @@ namespace ExClockify.Controller
         }
         
         [HttpDelete("DeleteTrack{id}")]
+        [Authorize]
         public async Task<ActionResult> DeleteTrack(int id)
         {
             var t = await _repository.Tracks.FindAsync(id);
@@ -87,6 +89,7 @@ namespace ExClockify.Controller
         // only updates if the id is found and wont add a new track
         // if the id was not found
         [HttpPut("UpdateTrack{id}")]
+        [Authorize]
         public async Task<ActionResult> UpdateTrack(TrackDto t, Guid id )
         {
             var track = await _repository.Tracks.FindAsync(id);
