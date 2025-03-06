@@ -7,14 +7,14 @@ namespace ExClockify.Services
     {
         public Track MapTrackDtoToTrack(TrackDto t) 
         {
-            return new Track
+            return new Track 
             {
                 UserDeviceId = t.UserDeviceId,
-                startTime = t.startTime,
-                endTime = t.endTime,
-                duration = t.duration,
-                description = t.description,
-                name = t.name
+                StartTime = t.startTime,
+                EndTime = t.endTime,
+                Duration = t.duration,
+                Description = t.description,
+                Name = t.name
             };
         }
         
@@ -35,24 +35,24 @@ namespace ExClockify.Services
         {
             var TracksDto = tracks.Select(t => new TrackDto
             {
-                startTime = t.startTime,
-                endTime = t.endTime,
-                duration = t.duration,
-                description = t.description,
+                startTime = t.StartTime,
+                endTime = t.EndTime,
+                duration = t.Duration,
+                description = t.Description,
                 UserDeviceId = t.UserDeviceId,
-                name = t.name
+                name = t.Name
             }).ToList();
         
             return TracksDto;
         }
-
+        
         public void UpdateTrackByTrackDto(TrackDto Dto, Track t)
         {
-            t.description = Dto.description;
-            t.startTime = Dto.startTime;
-            t.endTime = Dto.endTime;
-            t.duration = Dto.duration;
-            t.name = Dto.name;
+            t.Description = Dto.description;
+            t.StartTime = Dto.startTime;
+            t.EndTime = Dto.endTime;
+            t.Duration = Dto.duration;
+            t.Name = Dto.name;
         }
     
     }

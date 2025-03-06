@@ -14,13 +14,13 @@ namespace ExClockify.Controller
     
     [ApiController]
     [Route("api/[controller]")]
-    public class TrackController : ControllerBase
+    public class TaskController : ControllerBase
     {
         private readonly ExClockifyContext _repository;
         private readonly DtoService _dtoService;
         private readonly IConfiguration _config;
         
-        public TrackController(ExClockifyContext repository, DtoService dtoservice , IConfiguration config)
+        public TaskController(ExClockifyContext repository, DtoService dtoservice , IConfiguration config)
         {
             _repository = repository;
             _dtoService = dtoservice;
@@ -28,7 +28,7 @@ namespace ExClockify.Controller
         }
         
         // returning all tracks, based on deviceId
-        [HttpGet("GetTracks")]
+        [HttpGet("GetTasks")]
         [Authorize]
         public async Task<ActionResult> GetTracksByDeviceId(string deviceId)
         {
@@ -49,7 +49,7 @@ namespace ExClockify.Controller
             return Ok(_dtoService.MapTracksToTracksDto(user.Tracks));        
         }
         
-        [HttpPost("AddTrack")]
+        [HttpPost("AddTask")]
         [Authorize]
         public async Task<ActionResult> CreateNewTrackByDeviceId(TrackDto track)
         {
@@ -69,7 +69,7 @@ namespace ExClockify.Controller
             return Ok(_dtoService.MapTrackDtoToTrackDtoWithId(track , t.Id));
         }
         
-        [HttpDelete("DeleteTrack{id}")]
+        [HttpDelete("DeleteTask{id}")]
         [Authorize]
         public async Task<ActionResult> DeleteTrack(int id)
         {
@@ -82,13 +82,13 @@ namespace ExClockify.Controller
             _repository.Tracks.Remove(t);
             await _repository.SaveChangesAsync();
             
-            // could return TrackDtoResponse if needed, to show which track was deleted
+            // could also return TrackDtoResponse if needed, to show which track was deleted
             return Ok("the track was deleted");
         }
         
         // only updates if the id is found and wont add a new track
         // if the id was not found
-        [HttpPut("UpdateTrack{id}")]
+        [HttpPut("UpdateTask{id}")]
         [Authorize]
         public async Task<ActionResult> UpdateTrack(TrackDto t, Guid id )
         {
@@ -102,69 +102,9 @@ namespace ExClockify.Controller
             _dtoService.UpdateTrackByTrackDto(t, track);
             await _repository.SaveChangesAsync();
             
-            // return the updated track with its id 
+            // return the updated track with its id, the id might be needed
+            // for our front end, if its not needed then just return TrackDto 
             return Ok(_dtoService.MapTrackDtoToTrackDtoWithId(t , id));
         }
-        
-        // Todo - sign up 
-        [HttpPost("AddUser")]
-        public async Task<ActionResult> CreateNewUserByDeviceId(string deviceId)
-        {
-            User u = new User();
-            u.deviceId = deviceId;
-            
-            _repository.Users.Add(u); 
-            await _repository.SaveChangesAsync();
-            
-            return Ok();
-        }
-    
-        [HttpPost("JwtLogin")]
-        public async Task<ActionResult> JwtLogin(string deviceId)
-        {
-            
-            var user = await _repository.Users.FindAsync(deviceId);
-            if (user == null)
-            {
-                return BadRequest("user was not found");
-            }
-            
-            string jwtToken = GenerateJWT(deviceId);
-            // add the token to the response header
-            Response.Headers.Add("Authorization", "Bearer " + jwtToken);
-            
-            // return the Jwt after login
-            return Ok("Login Done ----  " + jwtToken);
-        }
-        
-        private string GenerateJWT(string deviceId)
-        {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"]!));
-            // creating the signature part
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-        
-            // creating the payload part
-            var userClaims = new[]
-            {
-                // seems enough for now
-                new Claim(ClaimTypes.NameIdentifier, deviceId),
-                // new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                // new Claim(ClaimTypes.Name, user.Name!),
-                // new Claim(ClaimTypes.Email, user.Email!),
-                // new Claim(ClaimTypes.UserData, user.UserName!),
-            };
-            
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: userClaims,
-                // 1 day expiration for now
-                expires: DateTime.Now.AddDays(1),
-                signingCredentials: credentials
-            );
-            
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-    
     }
 }
